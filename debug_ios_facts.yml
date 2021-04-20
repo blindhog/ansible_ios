@@ -1,0 +1,12 @@
+---
+- name: Gather IOS Facts
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Gather ios facts
+      ios_facts:
+      register: ios_facts
+
+    - debug:
+        msg: "{{ ios_facts }}"
+      

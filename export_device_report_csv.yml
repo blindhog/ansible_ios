@@ -1,0 +1,37 @@
+---
+- name: Build report of IOS Devices
+  hosts: all
+  gather_facts: no
+  serial: 50
+  ignore_errors: True
+  vars:
+    - output_directory: ./output
+    - filename: ios_device_report.csv
+  tasks:
+    - name: Gather Ansible Facts
+      setup:
+      delegate_to: localhost
+      
+    - name: Gather ios_facts
+      ios_facts:
+      register: ios_facts
+
+    - name: Set Facts
+      set_fact:
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Write device report headers to csv file
+      lineinfile:
+        line: "inventory_hostname,device_hostname,mgmt_ip,hardware,serial_number,version"
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ filename }}"
+        create: yes
+      delegate_to: localhost
+
+    - name: Write device report to csv file
+      lineinfile:
+        line: "{{ inventory_hostname }},{{ ansible_net_hostname }},{{ ansible_host }},{{ ansible_net_model }},{{ ansible_net_serialnum }},{{ ansible_net_version }} "
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ filename }}"
+      delegate_to: localhost
+
+ 

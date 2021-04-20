@@ -1,0 +1,75 @@
+---
+- name: Find {{ exec_command }} configs in IOS devices
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+  tasks:  
+    #--------------------------------------------------------
+    # Run Cisco Exec Command and register the output
+    #--------------------------------------------------------
+
+    - name:  "{{ exec_command }}"
+      ios_command:
+        commands: 
+          - "{{ exec_command }}"
+      register: output
+
+    - name: "debug {{ exec_command }}"
+      debug:
+        msg: "{{ output.stdout_lines }}"
+      tags:
+        - debug
+
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts
+      set_fact:
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+        exec_command_scrubbed: "{{ exec_command|replace(' ','_')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','') }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        state: directory
+      run_once: yes
+
+
+    - name: Write Command Output to file
+      copy:
+        content: "{{ output.stdout.0 }}"
+        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt"
+      delegate_to: localhost
+
+    - name: Write Output Header to file
+      lineinfile:
+        line: "\n\n\n!-- {{ inventory_hostname }} - {{ exec_command }} --!\n"
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed}}.txt"
+        create: yes
+        backrefs: yes
+        insertbefore: BOF
+      delegate_to: localhost
+
+    - name: Consolidate Command Output to one file
+      shell: "/bin/cat {{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt >> {{ output_directory }}/{{ yyyymmddhhmm }}/all-{{ exec_command_scrubbed }}.txt"
+      delegate_to: localhost
+      tags:
+        - consolidate
+ 
+    - name: Delete 
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt"
+        state: absent
+      delegate_to: localhost
+      tags:
+        - delete
+
+
+
+
+

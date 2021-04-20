@@ -1,0 +1,44 @@
+---
+- name: Download running config
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+    - ansible_connect_timeout: 60
+    
+  tasks:  
+    - name: show running-config
+      ios_command:
+        commands: 
+          - "show running-config"
+      register: output
+
+    - name: debug show running-config
+      debug:
+        msg: "{{ output.stdout_lines }}"
+      tags:
+        - debug
+ 
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts (time)
+      set_fact:
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        state: directory
+      run_once: yes
+      
+    - name: Write running-config to file
+      copy:
+        content: "{{ output.stdout.0 }}"
+        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-running-config.txt"
+      delegate_to: localhost

@@ -1,0 +1,51 @@
+---
+- name: Write Switch Mac Address Table to a file
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+  tasks:
+    
+    #--------------------------------------------------------------------
+    # Show Mac Address Table
+    #--------------------------------------------------------------------
+    - name: Show mac address table
+      ios_command:
+        commands: show mac address-table
+      register: mac_address_table
+
+
+    - name: Debug mac address table
+      debug:
+        msg: "{{ item }}"
+      with_items: "{{ mac_address_table.stdout_lines.0 }}"
+      tags:
+        - debug
+
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts (time)
+      set_fact:
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        state: directory
+      run_once: yes
+      
+    - name: Write to mac address table to file
+      lineinfile:
+        line: "{{ item }}"
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-mac_address_table.txt"
+        create: yes
+        insertafter: EOF
+      with_items: "{{ mac_address_table.stdout_lines.0 }}"
+
+ 
