@@ -35,6 +35,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
         state: directory
+        mode: 0644
       run_once: yes
       
     - name: Write running-config to file

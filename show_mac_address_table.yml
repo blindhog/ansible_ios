@@ -38,6 +38,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
         state: directory
+        mode: 0644
       run_once: yes
       
     - name: Write to mac address table to file
@@ -46,6 +47,7 @@
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-mac_address_table.txt"
         create: yes
         insertafter: EOF
+        mode: 0644
       with_items: "{{ mac_address_table.stdout_lines.0 }}"
 
  

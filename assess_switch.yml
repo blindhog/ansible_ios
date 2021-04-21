@@ -73,12 +73,14 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmdd }}"
         state: directory
+        mode: 0644
       run_once: yes
 
     - name: Create Output File
       file:
         path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
         state: touch
+        mode: 0644
       run_once: yes
 
     - debug:
@@ -97,6 +99,7 @@
         create: yes
         #backrefs: yes
         insertbefore: BOF
+        mode: 0644
       delegate_to: localhost
 
 

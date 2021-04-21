@@ -34,6 +34,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
         state: directory
+        mode: 0644
       run_once: yes
 
     - name: Write Output to file
@@ -41,12 +42,14 @@
         line: "\n\n\n!-- {{ inventory_hostname }}  --!\n"
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed}}.txt"
         create: yes
+        mode: 0644
       delegate_to: localhost
 
     - name: Write Configs to file
       lineinfile:
         line: "{{ item }}"
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed }}.txt"
+        mode: 0644
       with_items: "{{ output.stdout_lines.0 }}"
       delegate_to: localhost
       tags:
@@ -62,6 +65,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed }}.txt"
         state: absent
+        mode: 0644
       delegate_to: localhost
       tags:
         - delete

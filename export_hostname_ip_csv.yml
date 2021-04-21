@@ -18,6 +18,7 @@
         line: "{{ inventory_hostname }},{{ ansible_host }}"
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ filename }}"
         create: yes
+        mode: 0644
       delegate_to: localhost
 
  

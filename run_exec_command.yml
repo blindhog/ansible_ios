@@ -37,6 +37,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
         state: directory
+        mode: 0644
       run_once: yes
 
 
@@ -53,6 +54,7 @@
         create: yes
         backrefs: yes
         insertbefore: BOF
+        mode: 0644
       delegate_to: localhost
 
     - name: Consolidate Command Output to one file
@@ -65,6 +67,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt"
         state: absent
+        mode: 0644
       delegate_to: localhost
       tags:
         - delete

@@ -45,6 +45,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/"
         state: directory
+        mode: 0644
       run_once: yes
 
     - name: Write Output to file
@@ -52,6 +53,7 @@
         line: "{{ item }}"
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_run_start_diff.txt"
         create: yes
+        mode: 0644
       delegate_to: localhost
       loop:
         - "\n\n\n!-------------------------------------------------------------------------------------"
@@ -74,6 +76,7 @@
         line: "{{ item }}"
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_run_start_diff.txt"
         insertafter: EOF
+        mode: 0644
       with_items: "{{ config_differences.stdout_lines.0 }}"
       delegate_to: localhost
 
@@ -84,6 +87,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/all_run_start_diff.txt"
         state: touch
+        mode: 0644
       delegate_to: localhost
       run_once: yes
       tags:

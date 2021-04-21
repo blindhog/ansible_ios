@@ -26,12 +26,14 @@
         line: "inventory_hostname,device_hostname,mgmt_ip,hardware,serial_number,version"
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ filename }}"
         create: yes
+        mode: 0644
       delegate_to: localhost
 
     - name: Write device report to csv file
       lineinfile:
         line: "{{ inventory_hostname }},{{ ansible_net_hostname }},{{ ansible_host }},{{ ansible_net_model }},{{ ansible_net_serialnum }},{{ ansible_net_version }} "
         path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ filename }}"
+        mode: 0644
       delegate_to: localhost
 
  

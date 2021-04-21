@@ -26,6 +26,7 @@
       file:
         path: "{{ output_directory }}/{{ yyyymmdd }}"
         state: directory
+        mode: 0644
       delegate_to: localhost
       run_once: yes
 
@@ -58,6 +59,7 @@
         create: yes
         # backrefs: yes
         insertbefore: BOF
+        mode: 0644
       delegate_to: localhost
 
 
