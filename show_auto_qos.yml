@@ -1,0 +1,66 @@
+---
+- name: Write 'show auto qos' output  to a file
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+  tasks:
+    
+    #--------------------------------------------------------------------
+    # Show Mac Address Table
+    #--------------------------------------------------------------------
+    - name: show auto qos
+      ios_command:
+        commands: show auto qos
+      register: show_auto_qos
+
+
+      # `- name: Debug 'show auto qos'
+      # `  debug:
+      # `    msg: "{{ item }}"
+      # `  with_items: "{{ show_auto_qos.stdout_lines.0 }}"
+      # `  tags:
+      # `    - debug
+      # 
+    - name: Debug 'show auto qos'
+      debug:
+        msg: "{{ show_auto_qos }}"
+      tags:
+        - debug
+
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts (time)
+      set_fact:
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}-show_auto_qos"
+        state: directory
+        mode: 0644
+      run_once: yes
+      
+      #- name: Write to 'show auto qos' to file
+      #  lineinfile:
+      #    line: "{{ item }}"
+      #    path: "{{ output_directory }}/{{ yyyymmddhhmm }}-show_auto_qos/{{ inventory_hostname }}-show_auto_qos.txt"
+      #    create: yes
+      #    # insertafter: EOF
+      #    mode: 0644
+      #  with_items: "{{ show_auto_qos.stdout_lines.0 }}"
+
+    - name: Write 'show auto qos' to file
+      copy:
+        content: "{{ show_auto_qos.stdout_lines.0 | join('\n') }}"
+        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}-show_auto_qos/{{ inventory_hostname }}-show_auto_qos.txt"
+      delegate_to: localhost
+
+
+ 
