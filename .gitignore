@@ -1,4 +1,6 @@
-output
-backup
+output/
+backup/
 inventory
+inventory/
+private/
 *.retry
