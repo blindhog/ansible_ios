@@ -5,8 +5,16 @@
   tasks:
     - name: Gather ios facts
       ios_facts:
+        gather_network_resources:
+            #- interfaces
+            #- l2_interfaces
+            #- vlans
+            #- lag_interfaces
+            #- lacp
+            #- lacp_interfaces
+          - l3_interfaces
       register: ios_facts
 
     - debug:
         msg: "{{ ios_facts }}"
-      
+       
