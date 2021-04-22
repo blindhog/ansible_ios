@@ -1,0 +1,87 @@
+---
+- name: Write command output  to a file
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+    - ios_cmd: 'show spanning-tree vlan'
+    - ios_cmd_list: []
+    - ios_cmd_output_list: []
+
+  tasks:
+    - name: Gather IOS Facts from "{{ inventory_hostname }}"
+      ios_facts:
+        gather_network_resources:
+          - vlans
+      register: ios_facts
+
+    - name: Build a list of commands.
+      set_fact:
+        ios_cmd_list: "{{ ios_cmd_list }} + [ '{{ ios_cmd }} {{ item['vlan_id'] }}' ]"
+      with_items: "{{ ios_facts.ansible_facts.ansible_network_resources.vlans }}"
+
+    - debug:
+        msg: "{{ ios_cmd_list }}"
+        #msg: "{{ ios_cmd }} {{ item['vlan_id'] }}"
+        #msg: "{{ ios_facts }}"
+      #with_items: "{{ ios_facts.ansible_facts.ansible_network_resources.vlans }}"
+      #with_items: ios_cmd_list
+
+    - name: "{{ ios_cmd }}"
+      ios_command:
+        #commands: "{{ ios_cmd }} {{ item['vlan_id'] }}"
+        commands: "{{ item }}"
+      #with_items: "{{ ios_facts.ansible_facts.ansible_network_resources.vlans }}"
+      with_items: "{{ ios_cmd_list }}"
+      register: ios_cmd_output
+
+    - name: Debug '{{ ios_cmd }}'
+      debug:
+        msg: "{{ ios_cmd_output }}"
+      tags:
+        - debug
+
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts (time)
+      set_fact:
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}-{{ ios_cmd | replace('\ ','_') }}"
+        state: directory
+        mode: 0644
+      run_once: yes
+
+      #- debug:
+      #  msg: "{{ ios_cmd_output }}"
+
+    - debug:
+        msg: "{{ item.stdout_lines.0 }}"
+      with_items: "{{ ios_cmd_output.results }}"
+      
+    - name: Build file output list
+      set_fact:
+        #ios_cmd_list: "{{ ios_cmd_list }} + [ '{{ ios_cmd }} {{ item['vlan_id'] }}' ]"
+        ios_cmd_output_list: "{{ ios_cmd_output_list }} + ['','!---',''] + {{ item.stdout_lines.0 }}" 
+      with_items: "{{ ios_cmd_output.results }}"
+
+
+    - debug:
+        msg: "{{ ios_cmd_output_list }}"
+
+    - name: Write '{{ ios_cmd }}' to file
+      copy:
+        content: "{{ ios_cmd_output_list | join('\n') }}"
+        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}-{{ ios_cmd | replace('\ ','_') }}/{{ inventory_hostname }}-{{ ios_cmd | replace('\ ','_') }}.txt"
+      delegate_to: localhost
+
+
+ 
