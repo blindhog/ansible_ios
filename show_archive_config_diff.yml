@@ -1,0 +1,100 @@
+---
+- name: Show archive config differences
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+  tasks:
+    #=======================================================
+    # Backup Device Config
+    #=======================================================
+    - name: Back up Device Configuration
+      ios_config:
+        backup: yes
+    #=======================================================
+    # Gather IOS Facts
+    #=======================================================
+    - name: Gather IOS facts
+      ios_facts:
+        gather_subset: all
+      register: ios_facts_before
+
+    - name: Debug ios_facts
+      debug:
+        msg: "{{ ios_facts_before }}"
+
+    #=======================================================
+    # Set facts for later use
+    #=======================================================
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts
+      set_fact:
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    #=======================================================
+    # Write Config Differences to a file for the host
+    #=======================================================
+    - name: Create output directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/"
+        state: directory
+        mode: 0644
+      run_once: yes
+
+    - name: Write Output to file
+      lineinfile:
+        line: "{{ item }}"
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_run_start_diff.txt"
+        create: yes
+        mode: 0644
+      delegate_to: localhost
+      loop:
+        - "\n\n\n!-------------------------------------------------------------------------------------"
+        - "!-- {{ inventory_hostname }} - {{ ansible_host }}"
+        - "!-------------------------------------------------------------------------------------\n"
+
+    - name: Obtain startup and running config differences
+      ios_command:
+        commands: "show archive config differences nvram:startup-config system:running-config"
+      register: config_differences
+
+    - name: Debug Config Differerences
+      debug:
+        msg: "{{ config_differences }}"
+      tags:
+        - debug
+
+    - name: Write config differences to an output file
+      lineinfile:
+        line: "{{ item }}"
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_run_start_diff.txt"
+        insertafter: EOF
+        mode: 0644
+      with_items: "{{ config_differences.stdout_lines.0 }}"
+      delegate_to: localhost
+
+    #=======================================================
+    # Write Config Differences to a one file
+    #=======================================================
+    - name: Create consolidation file
+      file:
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/all_run_start_diff.txt"
+        state: touch
+        mode: 0644
+      delegate_to: localhost
+      run_once: yes
+      tags:
+        - consolidate
+
+    - name: Consolidate interface config cleanup_output to one file
+      shell: "/bin/cat {{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_run_start_diff.txt >> {{ output_directory }}/{{ yyyymmddhhmm }}/all_run_start_diff.txt"
+      delegate_to: localhost
+      tags:
+        - consolidate

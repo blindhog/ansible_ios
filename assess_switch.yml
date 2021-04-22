@@ -1,0 +1,110 @@
+---
+- name: Run Switch assessment
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+  tasks:  
+    - name:  "Run Cisco Switch Assessment Commands"
+      ios_command:
+        commands: 
+          - show version
+          - show run
+          - show interfaces status
+          - show interfaces trunk
+          - show interfaces summary
+          - show interfaces
+          - show int counters errors 
+          - show cdp neighbor
+          - show cdp neighbor detail
+          - show spanning-tree summary 
+          - show spanning-tree
+          - show etherchannel summary
+          - show mac address-table 
+          - show vlan
+          - show vtp status
+          #- show switch
+          #- show switch detail
+          #- show switch stack-ring speed
+          #- show stackwise-virtual
+          #- show stackwise-virtual link
+          #- show stackwise-virtual neighbors
+          #- show stackwise-virtual dual-active-detection
+          - show ip int brief
+          - show standby brief 
+          - show standby
+          - show ip route
+          #- show ip cef
+          - show arp
+          #- show ip protocols
+          #- show ip eigrp neighbor
+          - show ip eigrp topology
+          - show ip ospf neighbor
+          - show ip ospf database
+          #- show ip bgp summary
+          #- show ip bgp
+      register: output
+
+    - name: "debug assessment commands"
+      debug:
+        msg: "{{ output }}"
+      tags:
+        - debug
+
+    - name: "debug assessment commands"
+      debug:
+        msg: "{{ output.stdout_lines }}"
+      when: output.stdout_lines
+      tags:
+        - debug
+
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts
+      set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
+        state: directory
+        mode: 0644
+      run_once: yes
+
+    - name: Create Output File
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
+        state: touch
+        mode: 0644
+      run_once: yes
+
+    - debug:
+        msg: "{{ lookup('flattened', output.stdout) }}"
+
+    - name: Write Command Output to file
+      copy:
+        content: "{{ lookup('flattened', output.stdout) }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
+      delegate_to: localhost
+
+    - name: Write Output Header to file
+      lineinfile:
+        line: "\n\n\n!-- {{ inventory_hostname }} - {{ yyyymmddhhmm }} --!\n"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
+        create: yes
+        #backrefs: yes
+        insertbefore: BOF
+        mode: 0644
+      delegate_to: localhost
+
+
+
+
+
+
+

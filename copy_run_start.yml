@@ -1,0 +1,11 @@
+---
+- name: Save Device Config
+  hosts: all
+  gather_facts: no
+  vars:
+    - ansible_command_timeout: 60
+  tasks:
+    - name: copy running-config startup-config
+      ios_config:
+        save_when: always
+ 

@@ -1,0 +1,128 @@
+---
+- name: Configure SNMPv3
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+  tasks:  
+    #--------------------------------------------------------
+    # Gather ansible facts to set timestamps
+    #--------------------------------------------------------
+
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts
+      set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
+        state: directory
+        mode: 0644
+      delegate_to: localhost
+      run_once: yes
+
+    #--------------------------------------------------------
+    # Get existing SNMP config, print to screen and write to file
+    #--------------------------------------------------------
+
+    - name: "Gather ansible ios_facts"
+      ios_facts:
+      register: ios_facts
+
+    - name: Debug IOS Facts
+      debug:
+        msg: "{{ ios_facts }}"
+
+    - name:  "Gather existing snmp configuration"
+      ios_command:
+        commands: 
+          - "show run | section [Ss][Nn][Mm][Pp]"
+      register: snmp_config_before
+
+    - name: "SNMP Config Before"
+      debug:
+        msg: "{{ snmp_config_before.stdout_lines }}"
+      tags:
+        - debug
+
+    - name: Write previous SNMP configuration to file
+      copy:
+        content: "{{ snmp_config_before.stdout.0 }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-snmp_config_before.txt"
+      delegate_to: localhost
+
+    - name: Write Output Header to file
+      lineinfile:
+        line: "\n\n\n!-- {{ inventory_hostname }} - snmp_config_before - {{ yyyymmddhhmm }} --!\n"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-snmp_config_before.txt"
+        create: yes
+        #backrefs: yes
+        insertbefore: BOF
+        mode: 0644
+      delegate_to: localhost
+
+
+    - name: Add Previous SNMP config to a central file
+      shell: "/bin/cat {{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-snmp_config_before.txt >> {{ output_directory }}/{{ yyyymmdd }}/all-snmp_config_before.txt"
+      delegate_to: localhost
+      tags:
+        - consolidate
+ 
+    #    - name: Delete 
+    #      file:
+    #        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt"
+    #        state: absent
+    #      delegate_to: localhost
+    #      tags:
+    #        - delete
+
+    - name: Configure SNMPv3
+      ios_config:
+        src: "templates/SNMPv3-AuthNoPriv.j2"
+        backup: yes
+        backup_options:
+          filename: "{{ ansible_hostname }}-{{ yyyymmddhhmm }}.cfg"
+
+    - name:  "Gather existing snmp configuration"
+      ios_command:
+        commands: 
+          - "show run | section [Ss][Nn][Mm][Pp]"
+      register: snmp_config_after
+    
+    - name: "SNMP Config After"
+      debug:
+        msg: "{{ snmp_config_after.stdout_lines }}"
+      tags:
+        - debug
+  
+    - name: Write previous SNMP configuration to file
+      copy:
+        content: "{{ snmp_config_after.stdout.0 }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-snmp_config_after.txt"
+      delegate_to: localhost
+  
+    - name: Write Output Header to file
+      lineinfile:
+        line: "\n\n\n!-- {{ inventory_hostname }} - snmp_config_after - {{ yyyymmddhhmm }} --!\n"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-snmp_config_after.txt"
+        create: yes
+        #backrefs: yes
+        insertbefore: BOF
+        mode: 0644
+      delegate_to: localhost
+  
+  
+    - name: Add Previous SNMP config to a central file
+      shell: "/bin/cat {{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-snmp_config_after.txt >> {{ output_directory }}/{{ yyyymmdd }}/all-snmp_config_after.txt"
+      delegate_to: localhost
+      tags:
+        - consolidate

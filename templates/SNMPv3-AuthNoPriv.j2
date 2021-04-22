@@ -1,0 +1,36 @@
+ip access-list standard SNMPv3_ACL
+ permit 10.0.0.0 0.255.255.255
+ permit 192.168.0.0 0.0.255.255
+ permit 172.16.0.0 0.11.255.255
+
+snmp-server view SNMPv3_VIEW iso included
+snmp-server view SNMPv3_VIEW internet included
+snmp-server view SNMPv3_VIEW mib-2 included
+snmp-server view SNMPv3_VIEW system included
+snmp-server view SNMPv3_VIEW interfaces included
+snmp-server view SNMPv3_VIEW chassis included
+
+snmp-server group {{ _snmpv3_group }} v3 auth read SNMPv3_VIEW access SNMPv3_ACL
+
+snmp-server user {{ _snmpv3_user }} {{ _snmpv3_group }} v3 auth sha {{ _snmpv3_auth_password }}
+
+snmp-server chassis-id {{ ios_facts.ansible_facts.ansible_net_hostname }}
+
+{% if _snmp_ro_community is defined %}
+snmp-server community {{ _snmp_ro_community }} RO
+{% endif %}
+
+{% if _snmp_location is defined %}
+snmp-server location {{ _snmp_location }}
+{% endif %}
+
+{% if _snmp_contact is defined %}
+snmp-server contact {{ _snmp_contact }}
+{% endif %}
+
+snmp-server ifindex persist
+{# snmp ifmib ifindex persist #}
+
+
+
+
