@@ -1,25 +1,23 @@
 ---
-- name: Download running config
+- name: Write command output  to a file
   hosts: all
   gather_facts: no
   vars:
     - output_directory: ./output
     - ansible_command_timeout: 60
-    - ansible_connect_timeout: 60
-    
-  tasks:  
-    - name: show running-config
+    - ios_cmd: 'show running-config'
+  tasks:
+    - name: "{{ ios_cmd }}"
       ios_command:
-        commands: 
-          - "show running-config"
-      register: output
+        commands: "{{ ios_cmd }}"
+      register: ios_cmd_output
 
-    - name: debug show running-config
+    - name: Debug '{{ ios_cmd }}'
       debug:
-        msg: "{{ output.stdout_lines }}"
+        msg: "{{ ios_cmd_output }}"
       tags:
         - debug
- 
+
     - name: Gather ansible facts from localhost
       setup:
       delegate_to: localhost
@@ -33,13 +31,16 @@
 
     - name: Create Output Directory
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        path: "{{ output_directory }}/{{ yyyymmddhhmm }}-{{ ios_cmd | replace('\ ','_') }}"
         state: directory
         mode: 0644
       run_once: yes
       
-    - name: Write running-config to file
+    - name: Write '{{ ios_cmd }}' to file
       copy:
-        content: "{{ output.stdout.0 }}"
-        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-running-config.txt"
+        content: "{{ ios_cmd_output.stdout_lines.0 | join('\n') }}"
+        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}-{{ ios_cmd | replace('\ ','_') }}/{{ inventory_hostname }}-{{ ios_cmd | replace('\ ','_') }}.txt"
       delegate_to: localhost
+
+
+ 
