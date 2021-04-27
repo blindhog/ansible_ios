@@ -6,6 +6,10 @@
     - output_directory: ./output
     - ansible_command_timeout: 60
   tasks:  
+    - name: gather ios_facts
+      ios_facts:
+      register: ios_facts
+
     - name: show run | s {{ search_text }}
       ios_command:
         commands: 
@@ -25,45 +29,55 @@
 
     - name: Set Facts
       set_fact:
+        device_model: "{{ ios_facts.ansible_facts.ansible_net_model }}"
+        ios_version: "{{ ios_facts.ansible_facts.ansible_net_version }}"
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
-        search_text_scrubbed: "{{ search_text|replace(' ','_')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','') }}"
+        search_text_scrubbed: "{{ search_text|replace(' ','_')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','')|replace('(','')|replace(')','') }}"
       run_once: yes
 
     - name: Create Output Directory
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
         state: directory
         mode: 0644
       run_once: yes
 
-    - name: Write Output to file
-      lineinfile:
-        line: "\n\n\n!-- {{ inventory_hostname }}  --!\n"
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed}}.txt"
+    - name: Write Configs to file
+      copy:
+        content: "{{ output.stdout_lines.0 | join('\n') }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-run-{{ search_text_scrubbed }}-{{ yyyymmddhhmm }}.txt"
+        mode: 0644
+      delegate_to: localhost
+
+    - name: Write Header to file
+      blockinfile:
+        block: |
+
+
+          !-----------------------------------------------------------
+          ! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
+          ! Mgmt IP: {{ ansible_host }}
+          ! show run | s {{ search_text }}
+          !-----------------------------------------------------------
+
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-run-{{ search_text_scrubbed}}-{{ yyyymmddhhmm }}.txt"
+        marker: ""
         create: yes
         mode: 0644
+        insertbefore: BOF 
       delegate_to: localhost
-
-    - name: Write Configs to file
-      lineinfile:
-        line: "{{ item }}"
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed }}.txt"
-        mode: 0644
-      with_items: "{{ output.stdout_lines.0 }}"
-      delegate_to: localhost
-      tags:
-        - consolidate
 
     - name: Consolidate interface config files to one file
-      shell: "/bin/cat {{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed }}.txt >> {{ output_directory }}/{{ yyyymmddhhmm }}/show-run-{{ search_text_scrubbed }}.txt"
+      shell: "/bin/cat {{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-run-{{ search_text_scrubbed }}-{{ yyyymmddhhmm }}.txt >> {{ output_directory }}/{{ yyyymmdd }}/show-run-{{ search_text_scrubbed }}-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
       tags:
         - consolidate
  
-    - name: Consolidate interface config files to one file
+    - name: Delete individual host output file
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}_{{ search_text_scrubbed }}.txt"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-run-{{ search_text_scrubbed }}-{{ yyyymmddhhmm }}.txt"
         state: absent
         mode: 0644
       delegate_to: localhost
