@@ -1,23 +1,45 @@
 ---
-- name: Build report of 'inventory_hostname' and 'ansible_host'
+- name: Build a csv report of 'inventory_hostname' and 'ansible_host'
   hosts: all
-  gather_facts: yes
-  serial: 1
+  gather_facts: no
   vars:
-    - filename: hostname_ip.csv
+    - filename: inventory_hostname_ip.csv
     - output_directory: ./output
   ignore_errors: True
   tasks:   
+    - name: Gather facts from localhost
+      setup:
+      run_once: yes
+      delegate_to: localhost
+
     - name: Set Facts
       set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
       run_once: yes
+      delegate_to: localhost
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
+        state: directory
+        mode: 0644
+      run_once: yes
+      delegate_to: localhost
       
     - name: Write hostname and ip to csv file
       lineinfile:
         line: "{{ inventory_hostname }},{{ ansible_host }}"
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ filename }}"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ filename }}"
         create: yes
+        mode: 0644
+      
+    - name: Write hostname and ip header
+      lineinfile:
+        line: "Inventory_Hostname,Hostname_IP"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ filename }}"
+        create: yes
+        insertbefore: BOF
         mode: 0644
       delegate_to: localhost
 
