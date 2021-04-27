@@ -25,13 +25,14 @@
 
     - name: Set Facts (time)
       set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
       run_once: yes
 
     - name: Create Output Directory
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}-{{ ios_cmd | replace('\ ','_') }}"
+        path: "{{ output_directory }}/{{ yyyymmdd }}-{{ ios_cmd | replace('\ ','_') }}"
         state: directory
         mode: 0644
       run_once: yes
@@ -39,7 +40,7 @@
     - name: Write '{{ ios_cmd }}' to file
       copy:
         content: "{{ ios_cmd_output.stdout_lines.0 | join('\n') }}"
-        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}-{{ ios_cmd | replace('\ ','_') }}/{{ inventory_hostname }}-{{ ios_cmd | replace('\ ','_') }}.txt"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}-{{ ios_cmd | replace('\ ','_') }}/{{ inventory_hostname }}-{{ ios_cmd | replace('\ ','_') }}-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
 
 
