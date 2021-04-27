@@ -5,9 +5,9 @@
   vars:
     - output_directory: ./output
   tasks:  
-    #--------------------------------------------------------
-    # Run Cisco Exec Command and register the output
-    #--------------------------------------------------------
+    - name: Gather IOS Facts
+      ios_facts:
+      register: ios_facts
 
     - name:  "{{ exec_command }}"
       ios_command:
@@ -28,14 +28,17 @@
 
     - name: Set Facts
       set_fact:
+        device_model: "{{ ios_facts.ansible_facts.ansible_net_model }}"
+        ios_version: "{{ ios_facts.ansible_facts.ansible_net_version }}"
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
-        exec_command_scrubbed: "{{ exec_command|replace(' ','_')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','') }}"
+        exec_command_scrubbed: "{{ exec_command|replace(' ','-')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','') }}"
       run_once: yes
 
     - name: Create Output Directory
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
         state: directory
         mode: 0644
       run_once: yes
@@ -43,29 +46,38 @@
 
     - name: Write Command Output to file
       copy:
-        content: "{{ output.stdout.0 }}"
-        dest: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt"
+        content: "{{ output.stdout_lines.0 | join('\n') }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
 
     - name: Write Output Header to file
-      lineinfile:
-        line: "\n\n\n!-- {{ inventory_hostname }} - {{ exec_command }} --!\n"
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed}}.txt"
+      blockinfile:
+        block: |
+
+
+          !--------------------------------------------------------
+          ! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
+          ! Mgmt IP: {{ ansible_host }}
+          ! {{ exec_command }} 
+          !--------------------------------------------------------
+
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed}}-{{ yyyymmddhhmm }}.txt"
+        marker: ""
         create: yes
-        backrefs: yes
         insertbefore: BOF
         mode: 0644
       delegate_to: localhost
+      
 
     - name: Consolidate Command Output to one file
-      shell: "/bin/cat {{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt >> {{ output_directory }}/{{ yyyymmddhhmm }}/all-{{ exec_command_scrubbed }}.txt"
+      shell: "/bin/cat {{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt >> {{ output_directory }}/{{ yyyymmdd }}/{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
       tags:
         - consolidate
  
     - name: Delete 
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}.txt"
+        path: "{{ output_directory }}/{{ yyyymmdd}}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
         state: absent
         mode: 0644
       delegate_to: localhost
