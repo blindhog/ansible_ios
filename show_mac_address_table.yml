@@ -30,13 +30,14 @@
 
     - name: Set Facts (time)
       set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
       run_once: yes
 
     - name: Create Output Directory
       file:
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}"
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
         state: directory
         mode: 0644
       run_once: yes
@@ -44,7 +45,7 @@
     - name: Write to mac address table to file
       lineinfile:
         line: "{{ item }}"
-        path: "{{ output_directory }}/{{ yyyymmddhhmm }}/{{ inventory_hostname }}-mac_address_table.txt"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-mac_address_table-{{ yyyymmddhhmm }}.txt"
         create: yes
         insertafter: EOF
         mode: 0644
