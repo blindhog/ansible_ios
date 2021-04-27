@@ -31,19 +31,20 @@
           #- show stackwise-virtual neighbors
           #- show stackwise-virtual dual-active-detection
           - show ip int brief
-          - show standby brief 
-          - show standby
+          #- show standby brief 
+          #- show standby
           - show ip route
           #- show ip cef
           - show arp
           #- show ip protocols
           #- show ip eigrp neighbor
-          - show ip eigrp topology
-          - show ip ospf neighbor
-          - show ip ospf database
+          #- show ip eigrp topology
+          #- show ip ospf neighbor
+          #- show ip ospf database
           #- show ip bgp summary
           #- show ip bgp
       register: output
+      #ignore_errors: True
 
     - name: "debug assessment commands"
       debug:
@@ -88,7 +89,8 @@
 
     - name: Write Command Output to file
       copy:
-        content: "{{ lookup('flattened', output.stdout) }}"
+        #content: "{{ lookup('flattened', output.stdout) }}"
+        content: "{{ output.stdout | join('\n') }}"
         dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
 
