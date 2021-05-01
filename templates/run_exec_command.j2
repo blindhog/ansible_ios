@@ -1,0 +1,16 @@
+ 
+!===========================================================
+! {{ inventory_hostname }} - {{ ansible_net_model }} ({{ ansible_net_version }})
+! Mgmt IP: {{ ansible_host }}
+!==========================================================
+
+{{ ansible_net_hostname }}#{{ exec_command }}
+{% if output.stdout_lines is defined %}
+{% for cmd in output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+

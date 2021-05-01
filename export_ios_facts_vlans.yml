@@ -1,33 +1,32 @@
 ---
-- name: Write command output  to a file
+- name: Gather IOS Facts
   hosts: all
   gather_facts: no
   vars:
     - output_directory: ./output
-    - ansible_command_timeout: 60
-    - ios_cmd: 'show running-config'
   tasks:
     - name: Gather ios facts
       ios_facts:
+        gather_network_resources:
+            #- interfaces
+            #- l2_interfaces
+            - vlans
+            #- lag_interfaces
+            #- lacp
+            #- lacp_interfaces
+            #- l3_interfaces
+            #- all
       register: ios_facts
 
-    - name: "{{ ios_cmd }}"
-      ios_command:
-        commands: "{{ ios_cmd }}"
-      register: ios_cmd_output
+    - debug:
+        msg: "{{ ios_facts }}"
 
-    - name: Debug '{{ ios_cmd }}'
-      debug:
-        msg: "{{ ios_cmd_output }}"
-      tags:
-        - debug
-
-    - name: Gather ansible facts from localhost
+    - name: Gather Ansible Facts
       setup:
       delegate_to: localhost
       run_once: yes
 
-    - name: Set Facts (time)
+    - name: Set Facts
       set_fact:
         device_model: "{{ ios_facts.ansible_facts.ansible_net_model }}"
         ios_version: "{{ ios_facts.ansible_facts.ansible_net_version }}"
@@ -43,10 +42,10 @@
         mode: 0644
       run_once: yes
       
-    - name: Write '{{ ios_cmd }}' to file
+    - name: Write ios facts to file
       copy:
-        content: "{{ ios_cmd_output.stdout_lines.0 | join('\n') }}"
-        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ ios_cmd | replace('\ ','_') }}-{{ yyyymmddhhmm }}.txt"
+        content: "{{ ios_facts | to_nice_json }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
     
 
@@ -58,15 +57,13 @@
           !-----------------------------------------------------------
           ! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
           ! Mgmt IP: {{ ansible_host }}
-          ! {{ ios_cmd }}
+          ! ios facts
           !-----------------------------------------------------------
 
-        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-run-{{ search_text_scrubbed}}-{{ yyyymmddhhmm }}.txt"
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
         marker: ""
         create: yes
         mode: 0644
         insertbefore: BOF 
       delegate_to: localhost
-
-
- 
+       

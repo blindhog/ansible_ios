@@ -4,59 +4,99 @@
   gather_facts: no
   vars:
     - output_directory: ./output
+    - output: []
   tasks:  
-    - name:  "Run Cisco Switch Assessment Commands"
+
+    - name: "Gather IOS Facts"
+      ios_facts:
+      register: ios_facts
+
+    - name:  "Run General Cisco Switch Assessment Commands"
       ios_command:
         commands: 
           - show version
           - show run
+          - show cdp neighbor
+          - show cdp neighbor detail
+      register: general_output
+      ignore_errors: True
+
+    - name:  "Run Cisco Layer2 Assessment Commands"
+      ios_command:
+        commands: 
           - show interfaces status
           - show interfaces trunk
           - show interfaces summary
           - show interfaces
           - show int counters errors 
-          - show cdp neighbor
-          - show cdp neighbor detail
           - show spanning-tree summary 
           - show spanning-tree
           - show etherchannel summary
           - show mac address-table 
           - show vlan
           - show vtp status
-          #- show switch
-          #- show switch detail
-          #- show switch stack-ring speed
-          #- show stackwise-virtual
-          #- show stackwise-virtual link
-          #- show stackwise-virtual neighbors
-          #- show stackwise-virtual dual-active-detection
+      register: l2_output
+      ignore_errors: True
+
+    - name:  "Run Cisco Basic Layer3 Assessment Commands"
+      ios_command:
+        commands: 
           - show ip int brief
+          - show ip route
+          - show arp
+      register: l3_basic_output
+      ignore_errors: True
+
+    - name:  "Run Cisco Layer3 Routing Assessment Commands"
+      ios_command:
+        commands: 
           - show standby brief 
           - show standby
-          - show ip route
-          #- show ip cef
-          - show arp
-          #- show ip protocols
-          #- show ip eigrp neighbor
+          - show ip cef
+          - show ip protocols
+          - show ip eigrp neighbor
           - show ip eigrp topology
           - show ip ospf neighbor
           - show ip ospf database
-          #- show ip bgp summary
-          #- show ip bgp
-      register: output
+          - show ip bgp summary
+          - show ip bgp
+      register: l3_routing_output
+      ignore_errors: True
+
+    - name:  "Run Cisco Switch Stack Assessment Commands"
+      ios_command:
+        commands: 
+          - show switch
+          - show switch detail
+          - show switch stack-ring speed
+      register: stack_output
+      ignore_errors: True
+      
+    - name:  "Run Cisco Stack Wise Virtual Assessment Commands"
+      ios_command:
+        commands: 
+          - show stackwise-virtual
+          - show stackwise-virtual link
+          - show stackwise-virtual neighbors
+          - show stackwise-virtual dual-active-detection
+      register: swv_output
+      ignore_errors: True
+      
 
     - name: "debug assessment commands"
       debug:
-        msg: "{{ output }}"
+        msg: "{{ item }}"
+      when: "item.failed == 'false' "
+      with_items:
+        - "{{ general_output }}"
+        - "{{ l2_output }}"
+        - "{{ l3_basic_output }}"
+        - "{{ l3_routing_output }}"
+        - "{{ stack_output }}"
+        - "{{ swv_output }}"
       tags:
         - debug
 
-    - name: "debug assessment commands"
-      debug:
-        msg: "{{ output.stdout_lines }}"
-      when: output.stdout_lines
-      tags:
-        - debug
 
     - name: Gather ansible facts from localhost
       setup:
@@ -65,6 +105,8 @@
 
     - name: Set Facts
       set_fact:
+        device_model: "{{ ios_facts.ansible_facts.ansible_net_model }}"
+        ios_version: "{{ ios_facts.ansible_facts.ansible_net_version }}"
         yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
       run_once: yes
@@ -76,35 +118,9 @@
         mode: 0644
       run_once: yes
 
-    - name: Create Output File
-      file:
-        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
-        state: touch
-        mode: 0644
-      run_once: yes
 
-    - debug:
-        msg: "{{ lookup('flattened', output.stdout) }}"
-
-    - name: Write Command Output to file
-      copy:
-        content: "{{ lookup('flattened', output.stdout) }}"
+    - name: Output to file
+      template:
         dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
-      delegate_to: localhost
-
-    - name: Write Output Header to file
-      lineinfile:
-        line: "\n\n\n!-- {{ inventory_hostname }} - {{ yyyymmddhhmm }} --!\n"
-        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-assessment-{{ yyyymmddhhmm }}.txt"
-        create: yes
-        #backrefs: yes
-        insertbefore: BOF
+        src: ./templates/assess_switch.j2
         mode: 0644
-      delegate_to: localhost
-
-
-
-
-
-
-

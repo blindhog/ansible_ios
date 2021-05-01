@@ -1,0 +1,100 @@
+ 
+!===========================================================
+! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
+! Mgmt IP: {{ ansible_host }}
+! Assessment
+!==========================================================
+
+{% if general_output.stdout_lines is defined %}
+!---------------------------------------------------------
+! General
+!---------------------------------------------------------
+{% for cmd in general_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+{% if l2_output.stdout_lines is defined%}
+!---------------------------------------------------------
+! Layer2
+!---------------------------------------------------------
+{% for cmd in l2_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+{% if l3_basic_output.stdout_lines is defined %}
+!---------------------------------------------------------
+! Layer3
+!---------------------------------------------------------
+{% for cmd in l3_basic_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+
+
+!---
+
+
+{% if l3_routing_output.stdout_lines is defined %}
+{% for cmd in l3_routing_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+{% if stack_output.stdout_lines is defined %}
+!---------------------------------------------------------
+! Stackwise
+!---------------------------------------------------------
+{% for cmd in stack_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+{% if swv_output.stdout_lines is defined %}
+!---------------------------------------------------------
+! Stackwise Virtual
+!---------------------------------------------------------
+{% for cmd in swv_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+

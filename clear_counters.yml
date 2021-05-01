@@ -1,0 +1,17 @@
+---
+- name: Clear Counters
+  hosts: all
+  gather_facts: no
+  tasks:  
+    - name: "Clear Counters"
+      ios_command:
+        commands:
+          - command: clear counters
+            prompt: '[confirm]'
+            answer: 'y'
+      register: output
+      
+
+    - name: "debug assessment commands"
+      debug:
+        msg: "{{ output }}"
