@@ -1,0 +1,17 @@
+Avamar_Rack_12 ansible_host=172.16.232.60 _model=WS-C3560X-48P
+Blaise_S2 ansible_host=172.16.10.7 _model=WS-C3560G-24PS _serial=FOC1116Y2XA
+Blaise_S3 ansible_host=172.16.10.8 _model=WS-C3560G-24PS _serial=FOC1233W5HJ
+CorpWest_S1 ansible_host=172.25.2.10 _model=WS-C3560G-48PS _serial=FOC1215Z0BT
+DC1-Remotesite-temp ansible_host=172.25.1.147 _model=WS-C4500X-32 _serial=JAE201600VK
+HH_MOB_EAST ansible_host=172.25.22.30 _model=catalyst3560G48PS
+ITS-BILLS-OFFICE ansible_host=172.25.28.44 _model=WS-C3560-8PC _serial=FOC1107U1HU
+ITS1-01-S1S1 ansible_host=172.16.232.42 _model=WS-C3560X-48P _serial=FDO1534R1SR
+ITS_CS_Staging_S1 ansible_host=172.25.28.89 _model=WS-C3750X-48P _serial=FDO1712H20V
+JALC_S1S1 ansible_host=172.25.4.102 _model=catalyst37xxStack
+LP7_S1 ansible_host=172.25.2.42 _model=WS-C3560G-48PS _serial=FOC1227Z37P
+Marion-Outreach_lab ansible_host=172.25.2.169 _model=WS-C3560G-48PS _serial=FOC1414Y4BQ
+McElheny_S1 ansible_host=172.16.67.162 _model=C3560CG8
+McElheny_S2 ansible_host=172.16.67.163 _model=C3560CG8 
+NextGen-Meditech-S1 ansible_host=172.16.232.62 _model=WS-C3750G-24TS _serial=CAT0932R24N
+POB3-01 ansible_host=172.25.20.12 _model=catalyst37xxStack
+ucit3560-01 ansible_host=172.16.232.102 _model=WS-C3560X-48P _serial=FDO1451R08G

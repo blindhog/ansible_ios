@@ -1,0 +1,69 @@
+---
+- name: Gather IOS Facts
+  hosts: all
+  gather_facts: no
+  vars:
+    - output_directory: ./output
+  tasks:
+    - name: Gather ios facts
+      ios_facts:
+        gather_network_resources:
+            #- interfaces
+            #- l2_interfaces
+            - vlans
+            #- lag_interfaces
+            #- lacp
+            #- lacp_interfaces
+            #- l3_interfaces
+            #- all
+      register: ios_facts
+
+    - debug:
+        msg: "{{ ios_facts }}"
+
+    - name: Gather Ansible Facts
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts
+      set_fact:
+        device_model: "{{ ios_facts.ansible_facts.ansible_net_model }}"
+        ios_version: "{{ ios_facts.ansible_facts.ansible_net_version }}"
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
+        state: directory
+        mode: 0644
+      run_once: yes
+      
+    - name: Write ios facts to file
+      copy:
+        content: "{{ ios_facts | to_nice_json }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
+      delegate_to: localhost
+    
+
+    - name: Write Header to file
+      blockinfile:
+        block: |
+
+
+          !-----------------------------------------------------------
+          ! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
+          ! Mgmt IP: {{ ansible_host }}
+          ! ios facts
+          !-----------------------------------------------------------
+
+        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
+        marker: ""
+        create: yes
+        mode: 0644
+        insertbefore: BOF 
+      delegate_to: localhost
+       
