@@ -1,23 +1,24 @@
 ---
-- name: Find {{ exec_command }} configs in IOS devices
+- name: Write command output  to a file
   hosts: all
   gather_facts: no
   vars:
     - output_directory: ./output
-  tasks:  
-    - name: Gather IOS Facts
+    - ansible_command_timeout: 60
+    - exec_command: 'show version'
+  tasks:
+    - name: Gather ios facts
       ios_facts:
       register: ios_facts
 
-    - name:  "{{ exec_command }}"
+    - name: "{{ exec_command }}"
       ios_command:
-        commands: 
-          - "{{ exec_command }}"
+        commands: "{{ exec_command }}"
       register: output
 
-    - name: "debug {{ exec_command }}"
+    - name: Debug '{{ exec_command }}'
       debug:
-        msg: "{{ output.stdout_lines }}"
+        msg: "{{ output }}"
       tags:
         - debug
 
@@ -26,7 +27,7 @@
       delegate_to: localhost
       run_once: yes
 
-    - name: Set Facts
+    - name: Set Facts (time)
       set_fact:
         yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
@@ -40,31 +41,10 @@
         state: directory
         mode: 0644
       run_once: yes
-
-
+      
     - name: Write Command Output to file
       template:
         src: "./templates/run_exec_command.j2"
         dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
-
-
-    - name: Consolidate Command Output to one file
-      shell: "/bin/cat {{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt >> {{ output_directory }}/{{ yyyymmdd }}/{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
-      delegate_to: localhost
-      tags:
-        - consolidate
- 
-    - name: Delete 
-      file:
-        path: "{{ output_directory }}/{{ yyyymmdd}}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
-        state: absent
-        mode: 0644
-      delegate_to: localhost
-      tags:
-        - delete
-
-
-
-
 
