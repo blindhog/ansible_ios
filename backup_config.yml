@@ -3,6 +3,18 @@
   hosts: all
   gather_facts: no
   tasks:
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts
+      set_fact:
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
     - name: Download Device Config
       ios_config:
         backup: yes
+        backup_options:
+          filename: "{{ inventory_hostname }}-{{ yyyymmddhhmm }}.txt"
