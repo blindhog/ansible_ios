@@ -67,6 +67,36 @@
 
 {% endfor %} 
 {% endif %}
+{% if mls_qos_output.stdout_lines is defined%}
+!---------------------------------------------------------
+! mls qos
+!---------------------------------------------------------
+{% for cmd in mls_qos_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
+{% if mqc_qos_output.stdout_lines is defined%}
+!---------------------------------------------------------
+! mqc qos
+!---------------------------------------------------------
+{% for cmd in mqc_qos_output.stdout_lines %}
+{% for line in cmd %}
+{{ line }}
+{% endfor %}
+
+
+!---
+
+
+{% endfor %} 
+{% endif %}
 {% if stack_output.stdout_lines is defined %}
 !---------------------------------------------------------
 ! Stackwise
