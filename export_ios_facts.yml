@@ -8,13 +8,13 @@
     - name: Gather ios facts
       ios_facts:
         gather_network_resources:
-            #- interfaces
-            #- l2_interfaces
-            #- vlans
+            - interfaces
+            - l2_interfaces
+            - vlans
             #- lag_interfaces
             #- lacp
             #- lacp_interfaces
-            #- l3_interfaces
+            - l3_interfaces
             #- all
       register: ios_facts
 
@@ -42,28 +42,8 @@
         mode: 0644
       run_once: yes
       
-    - name: Write ios facts to file
-      copy:
-        content: "{{ ios_facts | to_nice_json }}"
+    - name: Write Command Output to file
+      template:
+        src: "./templates/export_ios_facts.j2"
         dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
-    
-
-    - name: Write Header to file
-      blockinfile:
-        block: |
-
-
-          !-----------------------------------------------------------
-          ! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
-          ! Mgmt IP: {{ ansible_host }}
-          ! ios facts
-          !-----------------------------------------------------------
-
-        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
-        marker: ""
-        create: yes
-        mode: 0644
-        insertbefore: BOF 
-      delegate_to: localhost
-       

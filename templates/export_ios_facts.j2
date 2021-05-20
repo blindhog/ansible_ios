@@ -1,0 +1,9 @@
+ 
+!===========================================================
+! {{ inventory_hostname }} - {{ ansible_net_model }} ({{ ansible_net_version }})
+! Mgmt IP: {{ ansible_host }}
+! ios_facts
+!==========================================================
+
+{{ ios_facts | to_nice_json }}"
+       
