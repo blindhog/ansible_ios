@@ -38,6 +38,24 @@
       register: l2_output
       ignore_errors: True
 
+    - name:  "Run Cisco mls qos Commands"
+      ios_command:
+        commands:
+          - show mls qos
+          - show mls qos interface
+          - show mls qos interface buffers
+          - show mls qos interface queueing
+          - show mls qos interface statistics
+      register: mls_qos_output
+      ignore_errors: True
+
+    - name:  "Run Cisco mqc qos Commands"
+      ios_command:
+        commands:
+          - show policy-map interface
+      register: mqc_qos_output
+      ignore_errors: True
+
     - name:  "Run Cisco Basic Layer3 Assessment Commands"
       ios_command:
         commands: 
