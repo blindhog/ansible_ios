@@ -1,0 +1,69 @@
+---
+- name: Build Cisco CDP Inventory
+  gather_facts: no
+  hosts: all
+  tasks:
+    - name: Gather IOS Facts
+      ios_facts:
+      register: ios_facts
+
+    - name: Build Local Ansible Facts
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Build Date Time Variables
+      set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Debug IOS Facts
+      debug:
+        msg: "{{ ios_facts | to_nice_json }}"
+
+    - name: Create output directory
+      file:
+        path: "./output/{{ yyyymmdd }}"
+        state: directory
+        mode: 0644
+      run_once: yes
+
+    - name: Create IOS Facts file
+      template:
+        src: templates/ios_facts.j2
+        dest: "output/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ yyyymmddhhmm }}.txt"
+      delegate_to: localhost
+
+    - name: Gather 'show cdp neighbors detail' output
+      ansible.utils.cli_parse:
+        command: "show cdp neighbors detail"
+        parser:
+          name: ansible.netcommon.ntc_templates
+          template_path: "./ntc-templates/cisco_ios_show_cdp_neighbors_detail.textfsm"
+      register: cdp_neighbors_detail
+
+    - name: Debug cdp neighbors detail
+      debug:
+        msg: "{{ cdp_neighbors_detail }}"
+
+    - name: Build CDP Inventory File
+      lineinfile:
+        line: "{{ item.destination_host }} ansible_host={{ item.management_ip }}"
+        path: "./cdp-inventory"
+        create: yes
+        mode: 0644
+      with_items: "{{ cdp_neighbors_detail.parsed }}"
+      when:
+        - item.destination_host is not search('^SEP')
+        - item.platform is not search('^GXP')
+        #             {
+        #                 "capabilities": "Switch IGMP",
+        #                 "destination_host": "10045-dc-lab1",
+        #                 "local_port": "GigabitEthernet3/47",
+        #                 "management_ip": "10.32.199.2",
+        #                 "platform": "cisco WS-C3750G-24PS",
+        #                 "remote_port": "GigabitEthernet1/0/24",
+        #                 "software_version": "Cisco IOS Software, C3750 Software (C3750-IPBASE-M), Version 12.2(35)SE5, RELEASE SOFTWARE (fc1)"
+        #             }
