@@ -1,0 +1,52 @@
+---
+- name: Download show version
+  hosts: all
+  gather_facts: false
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+    - ansible_connect_timeout: 60
+    
+  tasks:  
+    - name: send configuration commands to IOS
+      telnet:
+        user: ansible_admin
+        password: P4ssw0rd
+        login_prompt: "Username: "
+        prompts:
+          - '#$'
+        command:
+          - terminal length 0
+          - show version
+      register: output
+     
+    - name: debug output
+      debug:
+        msg: "{{ output.output.1 }}"
+      tags:
+        - debug
+ 
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts (time)
+      set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
+        state: directory
+      delegate_to: localhost
+      run_once: yes
+      
+    - name: Write output to file
+      copy:
+        content: "{{ output.output.1 }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-version-{{ yyyymmddhhmm }}.txt"
+      delegate_to: localhost

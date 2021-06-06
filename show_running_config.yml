@@ -5,20 +5,20 @@
   vars:
     - output_directory: ./output
     - ansible_command_timeout: 60
-    - ios_cmd: 'show running-config'
+    - exec_command: 'show running-config'
   tasks:
     - name: Gather ios facts
       ios_facts:
       register: ios_facts
 
-    - name: "{{ ios_cmd }}"
+    - name: "{{ exec_command }}"
       ios_command:
-        commands: "{{ ios_cmd }}"
-      register: ios_cmd_output
+        commands: "{{ exec_command }}"
+      register: output
 
-    - name: Debug '{{ ios_cmd }}'
+    - name: Debug '{{ exec_command }}'
       debug:
-        msg: "{{ ios_cmd_output }}"
+        msg: "{{ output }}"
       tags:
         - debug
 
@@ -29,11 +29,10 @@
 
     - name: Set Facts (time)
       set_fact:
-        device_model: "{{ ios_facts.ansible_facts.ansible_net_model }}"
-        ios_version: "{{ ios_facts.ansible_facts.ansible_net_version }}"
         yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
         yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
         yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+        exec_command_scrubbed: "{{ exec_command|replace(' ','-')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','') }}"
       run_once: yes
 
     - name: Create Output Directory
@@ -43,30 +42,9 @@
         mode: 0644
       run_once: yes
       
-    - name: Write '{{ ios_cmd }}' to file
-      copy:
-        content: "{{ ios_cmd_output.stdout_lines.0 | join('\n') }}"
-        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ ios_cmd | replace('\ ','_') }}-{{ yyyymmddhhmm }}.txt"
-      delegate_to: localhost
-    
-
-    - name: Write Header to file
-      blockinfile:
-        block: |
-
-
-          !-----------------------------------------------------------
-          ! {{ inventory_hostname }} - {{ device_model }} ({{ ios_version }})
-          ! Mgmt IP: {{ ansible_host }}
-          ! {{ ios_cmd }}
-          !-----------------------------------------------------------
-
-        path: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-show-run-{{ search_text_scrubbed}}-{{ yyyymmddhhmm }}.txt"
-        marker: ""
-        create: yes
-        mode: 0644
-        insertbefore: BOF 
+    - name: Write Command Output to file
+      template:
+        src: "./templates/run_exec_command.j2"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ exec_command_scrubbed }}-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
 
-
- 

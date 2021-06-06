@@ -1,0 +1,47 @@
+---
+- name: Change enable secret
+  hosts: all
+  gather_facts: no
+  serial: 10
+  vars:
+    - output_directory: ./output
+    - ansible_command_timeout: 60
+    - ansible_connect_timeout: 60
+    - username: 'admin'
+    - secret: 'P4ssw0rd'
+  tasks:
+    - name: Change configuration
+      ios_config:
+        lines: username {{ username }}  privilege 15 secret {{ secret }}
+        backup: yes
+      register: output
+
+    - name: debug config change
+      debug:
+        msg: "{{ output }}"
+      tags:
+        - debug
+ 
+    - name: Gather ansible facts from localhost
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Set Facts (time)
+      set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      run_once: yes
+
+    - name: Create Output Directory
+      file:
+        path: "{{ output_directory }}/{{ yyyymmdd }}"
+        state: directory
+      run_once: yes
+      delegate_to: localhost
+      
+    - name: Write output to file
+      copy:
+        content: "{{ output }}"
+        dest: "{{ output_directory }}/{{ yyyymmdd }}/{{ inventory_hostname }}-add-local-user-{{ yyyymmddhhmm }}.txt"
+      delegate_to: localhost
