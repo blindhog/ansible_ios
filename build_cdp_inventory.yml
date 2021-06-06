@@ -33,7 +33,7 @@
     - name: Create IOS Facts file
       template:
         src: templates/ios_facts.j2
-        dest: "output/{{ yyyymmdd }}/{{ inventory_hostname }}-{{ yyyymmddhhmm }}.txt"
+        dest: "output/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
       delegate_to: localhost
 
     - name: Gather 'show cdp neighbors detail' output
