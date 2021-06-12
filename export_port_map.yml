@@ -1,5 +1,5 @@
 ---
-- name: Build Cisco CDP Inventory
+- name: Build switch port map
   gather_facts: no
   hosts: all
   tasks:
@@ -50,7 +50,7 @@
 
     - name: Build CDP Inventory File
       lineinfile:
-        line: "cdp_{{ item.management_ip }} ansible_host={{ item.management_ip }}"
+        line: "{{ item.destination_host }} ansible_host={{ item.management_ip }}"
         path: "./cdp-inventory"
         create: yes
         mode: 0644
@@ -67,3 +67,5 @@
         #                 "remote_port": "GigabitEthernet1/0/24",
         #                 "software_version": "Cisco IOS Software, C3750 Software (C3750-IPBASE-M), Version 12.2(35)SE5, RELEASE SOFTWARE (fc1)"
         #             }
+        #
+        #

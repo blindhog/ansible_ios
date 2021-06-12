@@ -2,6 +2,8 @@
 - name: Build Cisco CDP Inventory
   gather_facts: no
   hosts: all
+  vars:
+    next_hop_list: []
   tasks:
     - name: Gather IOS Facts
       ios_facts:
@@ -30,11 +32,6 @@
         mode: 0644
       run_once: yes
 
-    - name: Create IOS Facts file
-      template:
-        src: templates/ios_facts.j2
-        dest: "output/{{ yyyymmdd }}/{{ inventory_hostname }}-ios-facts-{{ yyyymmddhhmm }}.txt"
-      delegate_to: localhost
 
     - name: Gather 'show cdp neighbors detail' output
       ansible.utils.cli_parse:
@@ -47,11 +44,12 @@
     - name: Debug cdp neighbors detail
       debug:
         msg: "{{ cdp_neighbors_detail }}"
+        
 
     - name: Build CDP Inventory File
       lineinfile:
-        line: "cdp_{{ item.management_ip }} ansible_host={{ item.management_ip }}"
-        path: "./cdp-inventory"
+        line: "{{ inventory_hostname }},{{ item.local_port }},{{ item.destination_host }},{{ item.management_ip }},{{ item.platform }},{{ item.remote_port }},{{ item.capabilities }},{{ item.software_version }}"
+        path: "./output/{{ yyyymmdd }}/cdp-neighbors-{{ yyyymmddhhmm }}.csv"
         create: yes
         mode: 0644
       with_items: "{{ cdp_neighbors_detail.parsed }}"
@@ -67,3 +65,11 @@
         #                 "remote_port": "GigabitEthernet1/0/24",
         #                 "software_version": "Cisco IOS Software, C3750 Software (C3750-IPBASE-M), Version 12.2(35)SE5, RELEASE SOFTWARE (fc1)"
         #             }
+        
+    - name: Add CDP Neighbor header
+      lineinfile:
+        line: "Local_Device,Local_Port,Neighbor_Hostname,Neighbor_IP,Neighbor_Platform,Neighbor_Port,Neighbor_Capabilities,Neighbor_Software_Version"
+        path: "./output/{{ yyyymmdd }}/cdp-neighbors-{{ yyyymmddhhmm }}.csv"
+        insertbefore: BOF
+
+

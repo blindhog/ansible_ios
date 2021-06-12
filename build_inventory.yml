@@ -2,6 +2,9 @@
 - name: Build Cisco CDP Inventory
   gather_facts: no
   hosts: all
+  vars:
+    next_hop_list: []
+    inventory_file: ./new-inventory
   tasks:
     - name: Gather IOS Facts
       ios_facts:
@@ -50,8 +53,8 @@
 
     - name: Build CDP Inventory File
       lineinfile:
-        line: "cdp_{{ item.management_ip }} ansible_host={{ item.management_ip }}"
-        path: "./cdp-inventory"
+        line: "new-{{ item.management_ip }} ansible_host={{ item.management_ip }}"
+        path: "./{{ inventory_file }}"
         create: yes
         mode: 0644
       with_items: "{{ cdp_neighbors_detail.parsed }}"
@@ -67,3 +70,31 @@
         #                 "remote_port": "GigabitEthernet1/0/24",
         #                 "software_version": "Cisco IOS Software, C3750 Software (C3750-IPBASE-M), Version 12.2(35)SE5, RELEASE SOFTWARE (fc1)"
         #             }
+    - name: Gather 'show ip cef' output
+      ansible.utils.cli_parse:
+        command: "show ip cef"
+        parser:
+          name: ansible.netcommon.ntc_templates
+          template_path: "./ntc-templates/cisco_ios_show_ip_cef.textfsm"
+      register: show_ip_cef
+
+    - name: Debug show_ip_cef
+      debug:
+        msg: "{{ show_ip_cef }}"
+
+
+    - name: Build Next Hop List
+      set_fact:
+        next_hop_list: "{{ next_hop_list}} + {{ item.nexthop }}"
+      with_items: "{{ show_ip_cef.parsed }}"
+
+    - name: Build cef Inventory File
+      lineinfile:
+        line: "new-{{ item }} ansible_host={{ item }}"
+        path: "./{{ inventory_file }}"
+        create: yes
+        mode: 0644
+      with_items: "{{ next_hop_list }}"
+
+
+

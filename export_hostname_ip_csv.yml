@@ -42,5 +42,6 @@
         insertbefore: BOF
         mode: 0644
       delegate_to: localhost
+      run_once: yes
 
  
