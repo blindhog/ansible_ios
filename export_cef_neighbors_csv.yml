@@ -1,0 +1,66 @@
+---
+- name: Build Cisco CDP Inventory
+  gather_facts: no
+  hosts: all
+  vars:
+    next_hop_list: []
+  tasks:
+    - name: Gather IOS Facts
+      ios_facts:
+      register: ios_facts
+
+    - name: Build Local Ansible Facts
+      setup:
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Build Date Time Variables
+      set_fact:
+        yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+        yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+      delegate_to: localhost
+      run_once: yes
+
+    - name: Debug IOS Facts
+      debug:
+        msg: "{{ ios_facts | to_nice_json }}"
+
+    - name: Create output directory
+      file:
+        path: "./output/{{ yyyymmdd }}"
+        state: directory
+        mode: 0644
+      run_once: yes
+
+    - name: Gather 'show ip cef' output
+      ansible.utils.cli_parse:
+        command: "show ip cef"
+        parser:
+          name: ansible.netcommon.ntc_templates
+          template_path: "./ntc-templates/cisco_ios_show_ip_cef.textfsm"
+      register: show_ip_cef
+
+    - name: Debug show_ip_cef
+      debug:
+        msg: "{{ show_ip_cef }}"
+
+    - name: Build Next Hop List
+      set_fact:
+        next_hop_list: "{{ next_hop_list}} + {{ item.nexthop }}"
+      with_items: "{{ show_ip_cef.parsed }}"
+
+    - name: Add CEF Neighbor Entries
+      lineinfile:
+        line: "{{ inventory_hostname}},{{ item }}"
+        path: "./output/{{ yyyymmdd }}/ip-cef-nexthop-{{ yyyymmddhhmm }}.csv"
+        create: yes
+        mode: 0644
+      with_items: "{{ next_hop_list }}"
+
+    - name: Add CEF Neighbor Header
+      lineinfile:
+        line: "Hostname,Layer3_Neighbor"
+        path: "./output/{{ yyyymmdd }}/ip-cef-nexthop-{{ yyyymmddhhmm }}.csv"
+        insertbefore: BOF
+
+

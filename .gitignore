@@ -1,6 +1,8 @@
 output/
 backup/
 inventory
+cdp-inventory
 inventory/
+host_vars/
 private/
 *.retry
