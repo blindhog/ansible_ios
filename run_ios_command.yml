@@ -1,0 +1,9 @@
+---
+- name: Run IOS Device Command
+  hosts: all
+  gather_facts: no
+  vars:
+    cmd_output: []
+  roles:
+    - get_timestamps
+    - run_ios_command
