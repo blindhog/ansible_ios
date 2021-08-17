@@ -1,0 +1,16 @@
+---
+# tasks file for get_timestamps
+- name: Gather Ansible facts
+  setup:
+  delegate_to: localhost
+  run_once: yes
+
+- name: Set Date/Time Timestamp variables
+  set_fact:
+    yyyy: "{{ ansible_date_time.year }}"
+    yyyymm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}"
+    yyyymmdd: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+    yyyymmddhh: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}"
+    yyyymmddhhmm: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+  delegate_to: localhost
+  run_once: yes
