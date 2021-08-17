@@ -14,10 +14,12 @@
     - "{{ ios_output.stdout_lines.0 }}"
   connection: local 
 
+- debug: var=ansible_play_hosts
+
 - name: Merge Hosts command output 
   set_fact: 
     cmd_output_combined: "{{ ansible_play_hosts | map('extract', hostvars) | map(attribute='cmd_output') }}"
-  connection: local
+  delegate_to: localhost
   run_once: yes
 
 - name: Create command output report
