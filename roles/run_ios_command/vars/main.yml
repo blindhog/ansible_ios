@@ -1,0 +1,4 @@
+---
+# vars file for run_ios_command
+ios_command: 'show version'
+cmd: "{{ ios_command|replace(' ','-')|replace('|','-')|replace('^','')|replace('$','')|replace('[','')|replace(']','') }}"

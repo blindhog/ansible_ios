@@ -1,0 +1,45 @@
+---
+# tasks file for run_ios_command
+
+- name: "Run IOS command {{ ios_command }}"
+  ios_command:
+    commands: "{{ ios_command }}"
+  register: ios_output
+
+- name: "Save '{{ ios_command }}' output to a variable"
+  set_fact:
+    cmd_output: "{{ cmd_output + item }}"
+  loop:
+    - "[' ','#-----','# {{ inventory_hostname }} - {{ ansible_host }}','#-----',' ']"
+    - "{{ ios_output.stdout_lines.0 }}"
+  connection: local 
+
+- name: Merge Hosts command output 
+  set_fact: 
+    cmd_output_combined: "{{ ansible_play_hosts | map('extract', hostvars) | map(attribute='cmd_output') }}"
+  connection: local
+  run_once: yes
+
+- name: Create command output report
+  template:
+    src: templates/ios_command.j2
+    dest: "/tmp/ios-command-{{ cmd }}-{{ yyyymmddhhmm }}.txt"
+    lstrip_blocks: yes
+    trim_blocks: yes
+  connection: local
+  run_once: yes
+
+- name: Send Report via e-mail
+  community.general.mail:
+    host: "{{ smtp_server }}"
+    port: 587
+    username: "{{ smtp_username }}"
+    password: "{{ smtp_password }}"
+    from: "{{ smtp_sender }}"
+    to: "{{ smtp_recipient }}"
+    subject: "AWX - IOS command output ({{ ios_command}})"
+    body: "The IOS command output Report Report is attached. \n\n ---\n AWX Automation System"
+    attach:
+      - "/tmp/ios-command-{{ cmd }}-{{ yyyymmddhhmm }}.txt"
+  connection: local
+  run_once: yes
