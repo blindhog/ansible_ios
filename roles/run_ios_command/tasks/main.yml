@@ -18,7 +18,7 @@
 
 - name: Merge Hosts command output 
   set_fact: 
-    cmd_output_combined: "{{ ansible_play_hosts | map('extract', hostvars) | map(attribute='cmd_output') }}"
+    cmd_output_combined: "{{ ansible_play_hosts | map('extract', hostvars) | map(attribute='cmd_output') | list }}"
   delegate_to: localhost
   run_once: yes
 
